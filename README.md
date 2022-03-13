@@ -105,6 +105,20 @@ AFTER: {"payload"=>{"something"=>["goats", "turkeys", "cats", "more cats", "peac
 Runs the callbacks defined by `:callback_name` via the Pipeline DSL
 
 
+### Mermaid
+
+```ruby
+pipeline.to_mermaid
+```
+
+#### segment_1
+```mermaid
+sequenceDiagram
+    participant do_something as Do Something
+participant end_of_queue as End Of Queue
+    do_something->>end_of_queue: {}
+
+```
 
 
 ## Development
