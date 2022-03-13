@@ -17,9 +17,9 @@ module PipelineHelper
     end
 
     def run_callbacks(callback, &block)
-        block.instance_exec(self, &callbacks[callback][:before]) if callbacks[callback][:before].present?
+        self.instance_exec(&callbacks[callback][:before]) if callbacks[callback][:before].present?
         yield
-        block.instance_exec(self, &callbacks[callback][:after]) if callbacks[callback][:after].present?
+        self.instance_exec(&callbacks[callback][:after]) if callbacks[callback][:after].present?
     end
 
     ## pipeline_output

@@ -7,15 +7,17 @@ RSpec.describe "PipelineJob" do
 
                 job :do_something, input: 'job_sqs' do
                 
-                    before(:create) do |job|
+                    before(:create) do 
                         # execute code as proc
-                        puts "BEFORE: #{job.current_job.to_hash}"
-                        job.current_job.payload.something << "cats"
+                        puts "BEFORE: #{current_job.to_hash}"
+                        puts "OUTER VAR #{@outside_var}"
+                        current_job.payload.something << "cats"
                     end
 
-                    after(:create) do |job|
-                        job.current_job.payload.something << "peacocks"
-                        puts "AFTER: #{job.current_job.to_hash}"
+                    after(:create) do 
+                        current_job.payload.something << "peacocks"
+                        puts "RESULT MODIFICATION #{@something_instance}"
+                        puts "AFTER: #{current_job.to_hash}"
                     end
                 end
 
@@ -25,6 +27,8 @@ RSpec.describe "PipelineJob" do
     end
 
 
+
+
     let(:job) do
 
         class TestJob < Jets::Job::Base
@@ -32,12 +36,13 @@ RSpec.describe "PipelineJob" do
 
             def do_something
                 # ap Pipelines.registry.dig(*event[:current_job]).jobs[meth].callbacks
-                outside_var = "outside"
+                @outside_var = "outside"
 
                 run_callbacks(:create) do
                     puts "CURRENT JOB: #{current_job.to_hash}"
                     some_var = "something_to_do"
                     current_job.payload.something << "more cats"
+                    @something_instance = current_job.payload.something.select { |x| x =~ /cats/ }
                     puts "THE MAIN CODE"
                     sucess = true
                 end
@@ -60,6 +65,25 @@ RSpec.describe "PipelineJob" do
             # event = json_file("spec/fixtures/dumps/sqs/sqs_event.json")
             # job.perform_now(:do_something, {current_job: [:convert_data, :segment_1] , pipeline: {convert_data: {segment_1: {do_something: {input: 'job_sqs'}}}}} )
         end
+
+        context "callbacks" do
+            it 'can access instance variables' do
+            end
+
+            it 'can access instance methods' do
+            end
+
+            it 'runs before callbacks' do
+            end
+
+            it 'runs after callbacks' do
+            end
+        
+            it 'can modifify payload' do
+            end
+        end
+
+
     end
 
 
