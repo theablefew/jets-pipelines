@@ -1,28 +1,97 @@
 # Jets::Pipelines
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/jets/pipelines`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Jets Pipelines adds a DSL for orchestrating a workflow using Jets Jobs. 
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Add this line to your Jets application's Gemfile:
 
 ```ruby
-gem 'jets-pipelines'
+gem 'jets-pipelines', git: 'git@github.com:theablefew/jets-pipelines.git', require: 'pipelines'
 ```
 
 And then execute:
 
     $ bundle install
 
-Or install it yourself as:
+#### Install PipelineJob
 
-    $ gem install jets-pipelines
+    $ jets install pipelines
+
+This will create `app/jobs/pipeline_job.rb`. Jobs that inherit from PipelineJob receive all the helper methods and callbacks to function as a pipeline. 
 
 ## Usage
 
-TODO: Write usage instructions here
+
+### A Simple Pipeline
+```ruby
+Pipelines.pipeline :convert_data do
+
+            segment :segment_1 do
+
+                job :do_something, input: 'job_sqs' do
+                
+                    before(:create) do |job|
+                        puts "BEFORE: #{job.current_job}"
+                        job.current_job.payload.something << "cats"
+                    end
+
+                    after(:create) do |job|
+                        job.current_job.payload.something << "peacocks"
+                        puts "AFTER: #{job.current_job}"
+                    end
+                end
+
+            end
+
+        end
+```
+
+### The Job
+```ruby
+       class TestJob < Jets::Job::Base
+            include PipelineHelper
+
+            def do_something
+                # ap Pipelines.registry.dig(*event[:current_job]).jobs[meth].callbacks
+                outside_var = "outside"
+
+                run_callbacks(:create) do
+                    puts "CURRENT JOB: #{current_job}"
+                    some_var = "something_to_do"
+                    current_job.payload.something << "more cats"
+                    puts "THE MAIN CODE"
+                end
+
+            end
+        end
+```
+
+### Run The Job
+```ruby
+TestJob.perform_now :do_something, {"Records"=>[{"messageId"=>"1e0bfe01-f9df-46c0-8d86-2fd898e4dee9", "receiptHandle"=>"AQEBgxVw0hjHeNKB1brir4hr0Fxvz4ERJIqd7bP/iHw82/+UUx/r4W0KG3FSiEA4A+Vk0oS8dT6W8be/Bn7eJjKspZfW2KzC0xzsCmS+BihySk1SX9FM5SW1rFd3bFWYtT6s7pOX2inaU/THtn7Envp5Rs+zehmNIspnLPZkf9h3RFSQk12xaVaOmCQnHtz9o8uKIXwMEwn5IhlJgC0DIuM1v8NZK8Hc65b4xpf09vf01LEA/XdXm24SjfJ0fl7ev2rBXtkMitAfNmKd8x0fcbG3O7H7wB+CIKR4+QvGcI6u9QuAdPU5MpIJ46niJmrtnIx70S5Go1paUYMa77ABBjFWoJkJHvHouuiohEQHdMrH1QSyabNBS2Nw2dikhBcXVtLQW4iH+xNXwLIVUxarAk9EHokh1iGWZsG91whmPaAl0t2Vdfo6Dcm0/6IgXhKcLFIw", "body"=>"{\"current_job\":[\"convert_data\",\"segment_1\"],\"pipeline\":{\"convert_data\":{\"segment_1\":{\"do_something\":{\"payload\":{\"something\":[\"goats\",\"turkeys\"]},\"input\":\"job_sqs\"}}}}}", "attributes"=>{"ApproximateReceiveCount"=>"1", "SentTimestamp"=>"1550605918693", "SenderId"=>"AIDAJTCD6O457Q7BMTLYM", "ApproximateFirstReceiveTimestamp"=>"1550605918704"}, "messageAttributes"=>{}, "md5OfBody"=>"3d635e69eb93fd184b47a31d460ca2b6", "eventSource"=>"aws:sqs", "eventSourceARN"=>"arn:aws:sqs:us-west-2:112233445566:demo-dev-List-3VJ13ADFT5VZ-Waitlist-X35N8JKWZTL3", "awsRegion"=>"us-west-2"}]}
+```
+
+### Callbacks
+
+#### DSL helpers
+`before(:callback_name)`
+
+`after(:callback_name)`
+
+#### Job 
+`run_callbacks(:callback_name)`
+Runs the callbacks defined by `:callback_name` via the Pipeline DSL
+
+
+### Output
+
+```ruby
+BEFORE: {"payload"=>{"something"=>["goats", "turkeys"]}, "input"=>"job_sqs"}
+CURRENT JOB: {"payload"=>{"something"=>["goats", "turkeys", "cats"]}, "input"=>"job_sqs"}
+THE MAIN CODE
+AFTER: {"payload"=>{"something"=>["goats", "turkeys", "cats", "more cats", "peacocks"]}, "input"=>"job_sqs"}
+```
 
 ## Development
 
