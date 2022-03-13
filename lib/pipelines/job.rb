@@ -1,7 +1,6 @@
 module Pipelines
     class Job
         include Pipelines::Registry
-
         attr_accessor :name, 
                       :input, 
                       :destination, 
@@ -9,7 +8,8 @@ module Pipelines
                       :payload, 
                       :hook, 
                       :parent,
-                      :context
+                      :context,
+                      :callbacks
 
         def initialize(name, input: nil, destination: nil , output: nil, parent: nil, payload: nil, context: nil)
             @name = name
@@ -17,6 +17,7 @@ module Pipelines
             @payload = payload
             @input = input
             @context = context
+            @callbacks = {}
             @destination = destination || Pipelines::END_OF_QUEUE
             @output = output || :sqs_event_payload
         end
@@ -41,9 +42,14 @@ module Pipelines
             @output = arg
         end
 
-        def before_output(&block)
-            hook = Hook.new
-            hook.instance_eval(&block)
+        def before(callback, &block)
+            @callbacks[callback] ||= {}
+            @callbacks[callback][:before] = block 
+        end
+
+        def after(callback, &block)
+            @callbacks[callback] ||= {}
+            @callbacks[callback][:after] = block
         end
 
         def hook(&block)

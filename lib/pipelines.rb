@@ -8,6 +8,7 @@ require 'ap'
 require 'active_support'
 require 'hashie'
 require 'active_model'
+require_relative 'pipelines/pipeline_helper'
 require_relative "pipelines/version"
 
 module Pipelines

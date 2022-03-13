@@ -35,12 +35,12 @@ module Pipelines
         end
     
         def to_flowchart
-            seq = ["#{name}(#{name.titleize})-->|\"#{payload.class}\"|#{destination_queue}"]
+            seq = ["#{name}(#{name.titleize})-->|\"#{payload.class}\"|#{destination}"]
             unless next_job == "end_of_queue"
-            seq << "#{destination_queue}(#{destination_queue})-->|SQS Event|#{next_job}(#{next_job.titleize})"
-            seq << "class #{destination_queue} sqs;"
+            seq << "#{destination}(#{destination})-->|SQS Event|#{next_job}(#{next_job.titleize})"
+            seq << "class #{destination} sqs;"
             else
-            seq << ["#{name}(#{name.titleize})-->#{destination_queue}"]
+            seq << ["#{name}(#{name.titleize})-->#{destination}"]
             end
         end
         

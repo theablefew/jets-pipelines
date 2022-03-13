@@ -136,4 +136,8 @@ RSpec.describe Pipelines do
         ap pipeline.build
     end
 
+
+    it 'follows a sequence' do
+      ap  pipeline.segments[:segment_1].jobs[:job_1].next_job
+    end
 end

@@ -1,7 +1,7 @@
 module Pipelines::Registry
     extend ActiveSupport::Concern
     included do
-        @registry = {}
+        @registry = ActiveSupport::HashWithIndifferentAccess.new
     end
 
     class_methods do
@@ -11,6 +11,6 @@ module Pipelines::Registry
     end
 
     def registry
-        @registry ||= {}
+        @registry ||= ActiveSupport::HashWithIndifferentAccess.new
     end
 end

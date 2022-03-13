@@ -10,14 +10,14 @@ module Pipelines
             # Pipeline.registry[self.as_json] = self.registry
         end
 
-        def job(name, input: nil, destination: nil , output: nil, &block)
-            job = Job.new(name, input: input, destination: destination, output: output, parent: [parent, self.name])
+        def job(name, **args, &block)
+            job = Job.new(name, parent: [parent, self.name], **args)
             job.instance_eval(&block) if block_given?
             registry[job.name] = job
         end
 
-        def watch(name, input: nil, every: nil, destination: nil, output: nil, &block)
-            watch = Watch.new(name, every: every, input: input, destination: destination, output: output, parent: [parent, self.name])
+        def watch(name, **args, &block)
+            watch = Watch.new(name, parent: [parent, self.name], **args)
             watch.instance_eval(&block) if block_given?
             registry[watch.name] = watch
         end
