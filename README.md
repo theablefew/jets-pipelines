@@ -27,54 +27,75 @@ This will create `app/jobs/pipeline_job.rb`. Jobs that inherit from PipelineJob 
 ```ruby
 Pipelines.pipeline :convert_data do
 
-            segment :segment_1 do
+    segment :segment_1 do
 
-                job :do_something, input: 'job_sqs' do
-                
-                    before(:create) do |job|
-                        puts "BEFORE: #{job.current_job}"
-                        job.current_job.payload.something << "cats"
-                    end
+        job :do_something, input: 'job_sqs' do
 
-                    after(:create) do |job|
-                        job.current_job.payload.something << "peacocks"
-                        puts "AFTER: #{job.current_job}"
-                    end
-                end
-
+            before(:create) do 
+                # execute code as proc
+                puts "BEFORE: #{current_job.to_hash}"
+                puts "OUTER VAR #{@outside_var}"
+                current_job.payload.something << "cats"
             end
 
+            after(:create) do 
+                current_job.payload.something << "peacocks"
+                puts "RESULT MODIFICATION #{@something_instance}"
+                puts "AFTER: #{current_job.to_hash}"
+            end
         end
+
+    end
+
+end
 ```
 
 ### The Job
 ```ruby
-       class TestJob < Jets::Job::Base
-            include PipelineHelper
+class TestJob < PipelineJob
 
-            def do_something
-                # ap Pipelines.registry.dig(*event[:current_job]).jobs[meth].callbacks
-                outside_var = "outside"
+    def do_something
+        # ap Pipelines.registry.dig(*event[:current_job]).jobs[meth].callbacks
+        @outside_var = "outside"
 
-                run_callbacks(:create) do
-                    puts "CURRENT JOB: #{current_job}"
-                    some_var = "something_to_do"
-                    current_job.payload.something << "more cats"
-                    puts "THE MAIN CODE"
-                end
-
-            end
+        run_callbacks(:create) do
+            puts "CURRENT JOB: #{current_job.to_hash}"
+            some_var = "something_to_do"
+            current_job.payload.something << "more cats"
+            @something_instance = current_job.payload.something.select { |x| x =~ /cats/ }
+            puts "THE MAIN CODE"
+            sucess = true
         end
+
+    end
+ end
+
 ```
 
 ### Run The Job
 ```ruby
 TestJob.perform_now :do_something, {"Records"=>[{"messageId"=>"1e0bfe01-f9df-46c0-8d86-2fd898e4dee9", "receiptHandle"=>"AQEBgxVw0hjHeNKB1brir4hr0Fxvz4ERJIqd7bP/iHw82/+UUx/r4W0KG3FSiEA4A+Vk0oS8dT6W8be/Bn7eJjKspZfW2KzC0xzsCmS+BihySk1SX9FM5SW1rFd3bFWYtT6s7pOX2inaU/THtn7Envp5Rs+zehmNIspnLPZkf9h3RFSQk12xaVaOmCQnHtz9o8uKIXwMEwn5IhlJgC0DIuM1v8NZK8Hc65b4xpf09vf01LEA/XdXm24SjfJ0fl7ev2rBXtkMitAfNmKd8x0fcbG3O7H7wB+CIKR4+QvGcI6u9QuAdPU5MpIJ46niJmrtnIx70S5Go1paUYMa77ABBjFWoJkJHvHouuiohEQHdMrH1QSyabNBS2Nw2dikhBcXVtLQW4iH+xNXwLIVUxarAk9EHokh1iGWZsG91whmPaAl0t2Vdfo6Dcm0/6IgXhKcLFIw", "body"=>"{\"current_job\":[\"convert_data\",\"segment_1\"],\"pipeline\":{\"convert_data\":{\"segment_1\":{\"do_something\":{\"payload\":{\"something\":[\"goats\",\"turkeys\"]},\"input\":\"job_sqs\"}}}}}", "attributes"=>{"ApproximateReceiveCount"=>"1", "SentTimestamp"=>"1550605918693", "SenderId"=>"AIDAJTCD6O457Q7BMTLYM", "ApproximateFirstReceiveTimestamp"=>"1550605918704"}, "messageAttributes"=>{}, "md5OfBody"=>"3d635e69eb93fd184b47a31d460ca2b6", "eventSource"=>"aws:sqs", "eventSourceARN"=>"arn:aws:sqs:us-west-2:112233445566:demo-dev-List-3VJ13ADFT5VZ-Waitlist-X35N8JKWZTL3", "awsRegion"=>"us-west-2"}]}
 ```
+### Output
 
-### Callbacks
+```ruby
+BEFORE: {"payload"=>{"something"=>["goats", "turkeys"]}, "input"=>"job_sqs"}
+CURRENT JOB: {"payload"=>{"something"=>["goats", "turkeys", "cats"]}, "input"=>"job_sqs"}
+THE MAIN CODE
+AFTER: {"payload"=>{"something"=>["goats", "turkeys", "cats", "more cats", "peacocks"]}, "input"=>"job_sqs"}
+```
+
+## Callbacks
 
 #### DSL helpers
+`pipeline :name` Describes Pipeline
+
+`segment :name` Describes workflow that ends in END OF QUEUE
+
+`job :name` 
+
+`watch :name`
+
 `before(:callback_name)`
 
 `after(:callback_name)`
@@ -84,14 +105,7 @@ TestJob.perform_now :do_something, {"Records"=>[{"messageId"=>"1e0bfe01-f9df-46c
 Runs the callbacks defined by `:callback_name` via the Pipeline DSL
 
 
-### Output
 
-```ruby
-BEFORE: {"payload"=>{"something"=>["goats", "turkeys"]}, "input"=>"job_sqs"}
-CURRENT JOB: {"payload"=>{"something"=>["goats", "turkeys", "cats"]}, "input"=>"job_sqs"}
-THE MAIN CODE
-AFTER: {"payload"=>{"something"=>["goats", "turkeys", "cats", "more cats", "peacocks"]}, "input"=>"job_sqs"}
-```
 
 ## Development
 
