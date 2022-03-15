@@ -31,14 +31,15 @@ module Pipelines
         end
 
         def build
-            {
+            HashWithIndifferentAccess.new(
                 input: @input,
                 destination: @destination,
                 output: @output,
                 every: @every,
                 at: @at,
                 payload: @payload,
-            }
+                parent: @parent
+            )
         end
 
     end

@@ -62,13 +62,14 @@ module Pipelines
         end
 
         def build
-            {
+            HashWithIndifferentAccess.new(
                 input: @input,
                 destination: @destination,
                 output: @output,
                 payload: @payload,
                 context: @context,
-            }
+                parent: @parent
+            )
         end
 
     end

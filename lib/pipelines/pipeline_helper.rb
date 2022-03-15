@@ -1,25 +1,29 @@
 module PipelineHelper
    
     def current_job
-        pipeline.dig(*sqs_event_payload[:current_job])[meth.to_sym]
+        pipeline[meth.to_sym]
     end
   
     def pipeline
-        @pipeline ||= Hashie::Mash.new sqs_event_payload[:pipeline]
+        @pipeline ||= Hashie::Mash.new(sqs_event_payload[:pipeline])
     end
   
     def next_job
-        pipeline[current_job.next_job]
+        pipeline[current_job.destination]
     end
 
     def callbacks
-        Pipelines.registry.dig(*sqs_event_payload[:current_job]).jobs[meth].callbacks
+        Pipelines.registry.dig(*current_job[:parent]).jobs[meth].callbacks
     end
 
-    def run_callbacks(callback, &block)
-        self.instance_exec(&callbacks[callback][:before]) if callbacks[callback][:before].present?
-        yield
-        self.instance_exec(&callbacks[callback][:after]) if callbacks[callback][:after].present?
+    def run_callbacks(callback, with_pipeline: nil)
+
+        @pipeline = Hashie::Mash.new(with_pipeline.as_json) if with_pipeline
+
+
+        self.instance_exec(&callbacks[callback][:before]) if callbacks.dig(callback, :before).present?
+        yield if block_given?
+        self.instance_exec(&callbacks[callback][:after]) if callbacks.dig(callback, :after).present?
     end
 
     ## pipeline_output
@@ -49,7 +53,7 @@ module PipelineHelper
     # pipeline_output(event, service: :sns)
   
     def pipeline_output(event, service: :sqs, **additional_attributes)
-      Jets::Pipeline::Output.to_service(service, event, additional_attributes)
+        Jets::Pipeline::Output.to_service(service, event, additional_attributes)
     end
   
   end
