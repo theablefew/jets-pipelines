@@ -16,7 +16,7 @@ module Pipelines
             @parent = parent
             @payload = payload
             @input = input
-            @context = context
+            @context = {}
             @callbacks = {}
             @destination = destination || Pipelines::END_OF_QUEUE
             @output = output || :sqs_event_payload

@@ -3,7 +3,16 @@ module Pipelines
 
         include Pipelines::Registry
 
-        attr_accessor :name, :at, :input, :every, :destination, :output, :payload, :hook, :parent, :callbacks
+        attr_accessor :name, 
+                    :at, 
+                    :input, 
+                    :every, 
+                    :destination, 
+                    :output, 
+                    :payload, 
+                    :hook, 
+                    :parent, 
+                    :callbacks
 
         def initialize(name, every: nil, at: nil, input: nil, destination: nil , output: nil, parent: nil)
             @name = name
@@ -11,6 +20,7 @@ module Pipelines
             @every = every
             @at = at
             @input = input
+            @context = {}
             @callbacks = {}
             @destination = destination || Pipelines::END_OF_QUEUE
             @output = output || :sqs_event_payload
@@ -38,6 +48,7 @@ module Pipelines
                 every: @every,
                 at: @at,
                 payload: @payload,
+                context: @context,
                 parent: @parent
             )
         end
